@@ -101,12 +101,18 @@ class FloatField(Field):
     def __init__(self, name=None, primary_key=False, default=0.0):
         super().__init__(name, 'real', primary_key, default)    
     
+class TextField(Field):
+    def __init__(self, name=None, default=None):
+        super().__init__(name, 'text', False, default)
+        
 class ModelMetaclass(type):
     
     def __new__(cls, name, bases, attrs):
         if name=='Model':
             return type.__new__(cls, name, bases, attrs)
         tableName = attrs.get('__table__', None) or name
+        print(tableName)
+        print('found model: %s (table: %s)' % (name, tableName))
         logging.info('found model: %s (table: %s)' % (name, tableName))
         mappings = dict()
         fields = []
@@ -114,16 +120,19 @@ class ModelMetaclass(type):
         for k,v in attrs.items():
             if isinstance(v, Field):
                 logging.info(' found mapping: %s ==> %s' % (k, v))
+                print(' found mapping: %s ==> %s' % (k, v))
                 mappings[k] = v
                 if v.primary_key:
                     # 找到主键：
                     if primaryKey:
-                        raise StandardError('Duplicate primary key for field: %s' %k)
+                        raise Exception('Duplicate primary key for field: %s' %k) #Automated Python 2 to 3 code: Renames StandardError to Exception
                     primaryKey = k
                 else:
                     fields.append(k)
+            print('primaryKey is')
+            print(primaryKey)
             if not primaryKey:
-                raise StandardError('Primary key not found.')
+                raise Exception('Primary key not found.')
             for k in mappings.keys():
                 attrs.pop(k)
             escaped_fields = list(map(lambda f: '`%s`' %f, fields))
